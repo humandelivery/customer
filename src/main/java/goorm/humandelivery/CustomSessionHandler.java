@@ -19,19 +19,21 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         this.stompSession = session;
 
+        System.out.println("연결 완료");
+
         Scanner scanner = new Scanner(System.in);
-        System.out.print("아이디, 비밀번호를 입력해주세요 ");
+        System.out.println("아이디, 비밀번호를 입력해주세요 ");
         String id = scanner.nextLine();
         String password = scanner.nextLine();
 
-        //로그인 요청 생성
+        // 로그인 요청 객체 생성
         LoginRequest loginRequest = new LoginRequest(id, password);
 
-
-        session.send("/api/v1/customer/auth-tokens", loginRequest);
+        // 로그인 요청을 전송
+        session.send("/app/api/v1/customer/auth-tokens", loginRequest);
         System.out.println("로그인 정보 전송");
 
-        // 로그인 결과 수신을 위한 구독
+        // 로그인 결과를 받기 위해 구독
         session.subscribe("/topic/auth-tokens/result", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -42,22 +44,23 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LoginResponse response = (LoginResponse) payload;
 
-                if ("login success".equals(response.message())) {
-                    // JWT 토큰을 헤더에 추가
+                if ("login success".equals(response.getMessage())) {
+                    // 로그인 성공 시 JWT 토큰을 사용하여 헤더 추가
                     StompHeaders stompHeader = new StompHeaders();
-                    stompHeader.setDestination("/app/call"); // url 추후 변경 예정
-                    stompHeader.set("Authorization", "Bearer " + response.jwtToken());
+                    stompHeader.setDestination("/app/call");  // URL은 추후 변경 예정
+                    stompHeader.set("Authorization", "Bearer " + response.getJwtToken());
 
+                    // 사용자에게 출발지, 도착지, 택시 종류를 입력받음
                     Scanner scanner = new Scanner(System.in);
-                    System.out.print("출발지, 도착지, 택시종류(일반, 모범, 우버 등등)을 입력해주세요 ");
+                    System.out.println("출발지, 도착지, 택시종류(일반, 모범, 우버 등등)을 입력해주세요 ");
                     String departPosition = scanner.nextLine();
                     String arrivalPosition = scanner.nextLine();
                     String taxiType = scanner.nextLine();
 
-                    //콜 요청 생성
+                    // 콜 요청 객체 생성
                     CallRequest callRequest = new CallRequest(departPosition, arrivalPosition, taxiType);
 
-                    //객체를 전송
+                    // 콜 요청 객체를 전송
                     stompSession.send(stompHeader, callRequest);
                     System.out.println("콜 요청 전송");
                 } else {
