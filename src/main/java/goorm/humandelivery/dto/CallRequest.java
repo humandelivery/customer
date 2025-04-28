@@ -1,33 +1,33 @@
 package goorm.humandelivery.dto;
 
 public class CallRequest {
-    private String departPosition;
-    private String arrivalPosition;
+    private String expectedOrigin;
+    private String expectedDestination;
     private String taxiType;
 
     public CallRequest() {
     }
 
-    public CallRequest(String departPosition, String arrivalPosition, String taxiType) {
-        this.departPosition = departPosition;
-        this.arrivalPosition = arrivalPosition;
+    public CallRequest(String expectedOrigin, String expectedDestination, String taxiType) {
+        this.expectedOrigin = expectedOrigin;
+        this.expectedDestination = expectedDestination;
         this.taxiType = taxiType;
     }
 
-    public String getDepartPosition() {
-        return departPosition;
+    public String getExpectedOrigin() {
+        return expectedOrigin;
     }
 
-    public void setDepartPosition(String departPosition) {
-        this.departPosition = departPosition;
+    public void setExpectedOrigin(String expectedOrigin) {
+        this.expectedOrigin = expectedOrigin;
     }
 
-    public String getArrivalPosition() {
-        return arrivalPosition;
+    public String getExpectedDestination() {
+        return expectedDestination;
     }
 
-    public void setArrivalPosition(String arrivalPosition) {
-        this.arrivalPosition = arrivalPosition;
+    public void setExpectedDestination(String expectedDestination) {
+        this.expectedDestination = expectedDestination;
     }
 
     public String getTaxiType() {

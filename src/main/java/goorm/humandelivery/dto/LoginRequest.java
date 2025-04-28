@@ -1,23 +1,23 @@
 package goorm.humandelivery.dto;
 
 public class LoginRequest {
-    private String id;
+    private String loginId;
     private String password;
 
     public LoginRequest() {
     }
 
-    public LoginRequest(String id, String password) {
-        this.id = id;
+    public LoginRequest(String loginId, String password) {
+        this.loginId = loginId;
         this.password = password;
     }
 
-    public String getId() {
-        return id;
+    public String getLoginId() {
+        return loginId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setLoginId(String loginId) {
+        this.loginId = loginId;
     }
 
     public String getPassword() {
