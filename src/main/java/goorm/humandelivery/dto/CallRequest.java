@@ -1,32 +1,32 @@
 package goorm.humandelivery.dto;
 
 public class CallRequest {
-    private String expectedOrigin;
-    private String expectedDestination;
+    private Location expectedOrigin;
+    private Location expectedDestination;
     private String taxiType;
 
     public CallRequest() {
     }
 
-    public CallRequest(String expectedOrigin, String expectedDestination, String taxiType) {
+    public CallRequest(Location expectedOrigin, Location expectedDestination, String taxiType) {
         this.expectedOrigin = expectedOrigin;
         this.expectedDestination = expectedDestination;
         this.taxiType = taxiType;
     }
 
-    public String getExpectedOrigin() {
+    public Location getExpectedOrigin() {
         return expectedOrigin;
     }
 
-    public void setExpectedOrigin(String expectedOrigin) {
+    public void setExpectedOrigin(Location expectedOrigin) {
         this.expectedOrigin = expectedOrigin;
     }
 
-    public String getExpectedDestination() {
+    public Location getExpectedDestination() {
         return expectedDestination;
     }
 
-    public void setExpectedDestination(String expectedDestination) {
+    public void setExpectedDestination(Location expectedDestination) {
         this.expectedDestination = expectedDestination;
     }
 

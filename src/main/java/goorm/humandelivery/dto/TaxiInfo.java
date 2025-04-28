@@ -1,23 +1,23 @@
 package goorm.humandelivery.dto;
 
 public class TaxiInfo {
-    int taxiId;
+    Long taxiId;
     String phoneNumber;
-    String Location;
+    String location;
 
     public TaxiInfo() {
 
     }
 
-    public TaxiInfo(int taxiId, String phoneNumber, String Location) {
+    public TaxiInfo(Long taxiId, String phoneNumber, String Location) {
         this.taxiId = taxiId;
         this.phoneNumber = phoneNumber;
-        this.Location = Location;
+        this.location = Location;
     }
-    public int getTaxiId() {
+    public Long getTaxiId() {
         return taxiId;
     }
-    public void setTaxiId(int taxiId) {
+    public void setTaxiId(Long taxiId) {
         this.taxiId = taxiId;
     }
     public String getPhoneNumber() {
@@ -27,6 +27,9 @@ public class TaxiInfo {
         this.phoneNumber = phoneNumber;
     }
     public String getLocation() {
-        return Location;
+        return location;
+    }
+    public void setLocation(String location) {
+        this.location = location;
     }
 }
