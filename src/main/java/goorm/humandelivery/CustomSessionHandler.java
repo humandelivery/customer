@@ -1,8 +1,6 @@
 package goorm.humandelivery;
 
-import goorm.humandelivery.dto.CallRequest;
-import goorm.humandelivery.dto.LoginRequest;
-import goorm.humandelivery.dto.LoginResponse;
+import goorm.humandelivery.dto.*;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -11,60 +9,99 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import java.lang.reflect.Type;
 import java.util.Scanner;
 
+
+
 class CustomSessionHandler extends StompSessionHandlerAdapter {
 
-    private StompSession stompSession;
+    private final String jwtToken;
+
+    public CustomSessionHandler(String jwtToken) {
+        this.jwtToken = jwtToken;
+    }
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-        this.stompSession = session;
+        System.out.println("WebSocket 연결 완료"); // 추후 제거 예정 , 확인용
 
-        System.out.println("연결 완료");
-
+        // 사용자에게 콜 정보 입력 받기
         Scanner scanner = new Scanner(System.in);
-        System.out.println("아이디, 비밀번호를 입력해주세요 ");
-        String id = scanner.nextLine();
-        String password = scanner.nextLine();
+        System.out.println("출발지, 도착지, 택시종류(일반, 모범, 우버 등등)을 입력해주세요 ");
+        String expectedOrigin = scanner.nextLine();
+        String expectedDestination = scanner.nextLine();
+        String taxiType = scanner.nextLine();
 
-        // 로그인 요청 객체 생성
-        LoginRequest loginRequest = new LoginRequest(id, password);
+        // 콜 요청 객체 생성
+        CallRequest callRequest = new CallRequest(expectedOrigin, expectedDestination, taxiType);
 
-        // 로그인 요청을 전송
-        session.send("/app/api/v1/customer/auth-tokens", loginRequest);
-        System.out.println("로그인 정보 전송");
+        // JWT 포함한 헤더 세팅
+        StompHeaders stompHeader = new StompHeaders();
+        stompHeader.setDestination("/app/call"); // 목적지 주소는 추후 변경 예정
+        stompHeader.set("Authorization", "Bearer " + jwtToken);
 
-        // 로그인 결과를 받기 위해 구독
-        session.subscribe("/topic/auth-tokens/result", new StompFrameHandler() {
+        // 콜 요청 전송
+        session.send(stompHeader, callRequest);
+        System.out.println("콜 요청 전송 완료");
+
+        session.subscribe("/topic/call/result", new StompFrameHandler() { // 목적지 주소는 추후 변경 예정
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return LoginResponse.class;
+                return CallResponse.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                LoginResponse response = (LoginResponse) payload;
+                CallResponse callResponse = (CallResponse) payload;
+                System.out.println("배차 완료 " + callResponse);
+            }
+        });
 
-                if ("login success".equals(response.getMessage())) {
-                    // 로그인 성공 시 JWT 토큰을 사용하여 헤더 추가
-                    StompHeaders stompHeader = new StompHeaders();
-                    stompHeader.setDestination("/app/call");  // URL은 추후 변경 예정
-                    stompHeader.set("Authorization", "Bearer " + response.getJwtToken());
+        session.subscribe("/topic/taxi/info", new StompFrameHandler() { // 목적지 주소는 추후 변경 예정
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return TaxiInfo.class;
+            }
 
-                    // 사용자에게 출발지, 도착지, 택시 종류를 입력받음
-                    Scanner scanner = new Scanner(System.in);
-                    System.out.println("출발지, 도착지, 택시종류(일반, 모범, 우버 등등)을 입력해주세요 ");
-                    String departPosition = scanner.nextLine();
-                    String arrivalPosition = scanner.nextLine();
-                    String taxiType = scanner.nextLine();
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                TaxiInfo taxiInfo = (TaxiInfo) payload;
+                System.out.println("택시 정보 수신: " + taxiInfo);
+            }
+        });
 
-                    // 콜 요청 객체 생성
-                    CallRequest callRequest = new CallRequest(departPosition, arrivalPosition, taxiType);
+        //  택시 위치 주기적 수신
+        session.subscribe("/topic/taxi/location", new StompFrameHandler() { // 목적지 주소는 추후 변경 예정
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return TaxiLocation.class;
+            }
 
-                    // 콜 요청 객체를 전송
-                    stompSession.send(stompHeader, callRequest);
-                    System.out.println("콜 요청 전송");
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                TaxiLocation taxiLocation = (TaxiLocation) payload;
+                System.out.println("택시 현재 위치: " + taxiLocation);
+            }
+        });
+        //  운행 결과 수신
+        session.subscribe("/topic/taxi/result", new StompFrameHandler() { // 목적지 주소는 추후 변경 예정
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return TaxiResult.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                TaxiResult rideResult = (TaxiResult) payload;
+                System.out.println("운행 결과 수신: " + rideResult);
+
+                System.out.println("계속 연결하시겠습니까? (Y/N):");
+                String input = scanner.nextLine();
+                if (input.equalsIgnoreCase("N")) {
+                    System.out.println("연결 종료");
+                    session.disconnect();
+                    System.exit(0); // 자바 프로그램 종료
                 } else {
-                    System.out.println("로그인 실패");
+                    System.out.println("연결 유지");
+                    // 연결 유지? 초기화면으로 돌아감?
                 }
             }
         });
