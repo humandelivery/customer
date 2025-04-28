@@ -90,8 +90,8 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                TaxiResult rideResult = (TaxiResult) payload;
-                System.out.println("운행 결과 수신: " + rideResult);
+                TaxiResult taxiResult = (TaxiResult) payload;
+                System.out.println("운행 결과 수신: " + taxiResult);
 
                 System.out.println("계속 연결하시겠습니까? (Y/N):");
                 String input = scanner.nextLine();
