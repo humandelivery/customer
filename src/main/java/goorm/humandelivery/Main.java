@@ -33,11 +33,11 @@ public class Main {
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-// JSON 파싱
+        // JSON 파싱
         ObjectMapper objectMapper = new ObjectMapper();
         String responseBody = response.body();
 
-// 로그인 성공 여부 판단
+        // 로그인 성공 여부 판단
         if (response.statusCode() == 200) { // 200 OK
             String jwtToken = objectMapper.readTree(responseBody)
                     .get("token")
