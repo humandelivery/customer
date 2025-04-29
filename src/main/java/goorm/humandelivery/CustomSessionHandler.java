@@ -64,7 +64,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {  // callResponse 대신 taxiInfo를 받는 느낌으로 사용
                 TaxiInfo taxiInfo = (TaxiInfo) payload;                      // 택시 정보를 받는게 배차가 완료됨을 의미한다고 생각
-                System.out.println("택시 정보 수신(배차 완료): " + taxiInfo);
+                System.out.println("택시 정보 수신(배차 완료): " + taxiInfo);     // 여기도 받을때 기사위치 좌표로 받는지 의문
             }
         });
     }
@@ -103,7 +103,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
     private void subscribeTaxiResult(StompSession session) {
         StompHeaders headers = new StompHeaders();
-        headers.setDestination("/topic/taxi/result");
+        headers.setDestination("/topic/taxi/result"); // 추후 변경 예정  & 여기도 받을때 도착지 출발지 좌표로 받는지 의문
         headers.add("Authorization", "Bearer " + jwtToken);
 
         session.subscribe(headers, new StompFrameHandler() {
