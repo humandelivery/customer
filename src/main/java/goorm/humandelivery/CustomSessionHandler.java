@@ -33,7 +33,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
             // JWT 포함한 헤더 세팅
             StompHeaders stompHeaders = new StompHeaders();
-            stompHeaders.setDestination("/app/call");
+            stompHeaders.setDestination("/app/call/request");
             stompHeaders.add("Authorization", "Bearer " + jwtToken);
 
             // 콜 요청 전송
@@ -41,9 +41,9 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             System.out.println("콜 요청 전송 완료");
 
             // 콜 요청 후에 구독을 등록
-            subscribeTaxiInfo(session);
-            subscribeTaxiLocation(session);
-            subscribeTaxiResult(session);
+            subscribeTaxiInfo(session); // 배차 완료되고 택시 정보 받음
+            subscribeTaxiLocation(session); // 택시기사 위치 실시간으로 받음
+            subscribeTaxiResult(session); // 하차 후 결과 정보 전달
 
         } else {
             System.out.println("주소 변환 실패, 콜 요청을 진행할 수 없습니다.");
@@ -52,7 +52,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
     private void subscribeTaxiInfo(StompSession session) {
         StompHeaders headers = new StompHeaders();
-        headers.setDestination("/topic/taxi/info");
+        headers.setDestination("/queue/call/response");
         headers.add("Authorization", "Bearer " + jwtToken);
 
         session.subscribe(headers, new StompFrameHandler() {
@@ -62,9 +62,9 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             }
 
             @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                TaxiInfo taxiInfo = (TaxiInfo) payload;
-                System.out.println("택시 정보 수신: " + taxiInfo);
+            public void handleFrame(StompHeaders headers, Object payload) {  // callResponse 대신 taxiInfo를 받는 느낌으로 사용
+                TaxiInfo taxiInfo = (TaxiInfo) payload;                      // 택시 정보를 받는게 배차가 완료됨을 의미한다고 생각
+                System.out.println("택시 정보 수신(배차 완료): " + taxiInfo);
             }
         });
     }
@@ -139,7 +139,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         try {
             return KakaoMap.convertAddressToLocation(address);
         } catch (Exception e) {
-            System.err.println("주소 변환 중 오류 발생: " + address);
+            System.err.println("주소 변환 중 오류 발생");
             e.printStackTrace();
             return null;
         }
@@ -148,10 +148,9 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
     // 위도, 경도를 주소로 변환하는 메서드
     private String safeConvertCoordinates(double latitude, double longitude) {
         try {
-            // 좌표를 주소로 변환
             return KakaoMap.convertCoordinatesToAddress(latitude, longitude);
         } catch (Exception e) {
-            System.err.println("좌표 변환 중 오류 발생: 위도 = " + latitude + ", 경도 = " + longitude);
+            System.err.println("좌표 변환 중 오류 발생");
             e.printStackTrace();
             return null;  // 변환 실패 시 null 반환
         }
