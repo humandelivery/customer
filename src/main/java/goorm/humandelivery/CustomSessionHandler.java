@@ -4,12 +4,10 @@ import goorm.humandelivery.dto.*;
 import org.springframework.messaging.simp.stomp.*;
 import java.lang.reflect.Type;
 import java.util.Scanner;
+
 class CustomSessionHandler extends StompSessionHandlerAdapter {
 
-    private final String jwtToken;
-
-    public CustomSessionHandler(String jwtToken) {
-        this.jwtToken = jwtToken;
+    public CustomSessionHandler() {
     }
 
     @Override
@@ -26,15 +24,15 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         // 주소를 위도, 경도로 변환
         Location originLocation = safeConvertAddress(expectedOriginAddress);
         Location destinationLocation = safeConvertAddress(expectedDestinationAddress);
+        System.out.println("좌표 변환 완료");
 
         if (originLocation != null && destinationLocation != null) {
             // 콜 요청 객체 생성
             CallRequest callRequest = new CallRequest(originLocation, destinationLocation, taxiType);
 
-            // JWT 포함한 헤더 세팅
+            // 헤더 세팅 (JWT 토큰 제거)
             StompHeaders stompHeaders = new StompHeaders();
             stompHeaders.setDestination("/app/call/request");
-            stompHeaders.add("Authorization", "Bearer " + jwtToken);
 
             // 콜 요청 전송
             session.send(stompHeaders, callRequest);
@@ -53,7 +51,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
     private void subscribeTaxiInfo(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/queue/call/response");
-        headers.add("Authorization", "Bearer " + jwtToken);
 
         session.subscribe(headers, new StompFrameHandler() {
             @Override
@@ -71,8 +68,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
     private void subscribeTaxiLocation(StompSession session) {
         StompHeaders headers = new StompHeaders();
-        headers.setDestination("/user/queue/update-taxidriver-location");
-        headers.add("Authorization", "Bearer " + jwtToken);
+        headers.setDestination("/user/queue/driving-location");
 
         session.subscribe(headers, new StompFrameHandler() {
             @Override
@@ -86,7 +82,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                 TaxiLocation taxiLocation = (TaxiLocation) payload;
                 Location location = taxiLocation.getLocation();  // Location 객체
 
-                // 좌표 출력
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
 
@@ -103,8 +98,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
     private void subscribeTaxiResult(StompSession session) {
         StompHeaders headers = new StompHeaders();
-        headers.setDestination("/topic/taxi/result"); // 추후 변경 예정  & 여기도 받을때 도착지 출발지 좌표로 받는지 의문
-        headers.add("Authorization", "Bearer " + jwtToken);
+        headers.setDestination("/queue/taxi/result"); // 추후 변경 예정  & 여기도 받을때 도착지 출발지 좌표로 받는지 의문
 
         session.subscribe(headers, new StompFrameHandler() {
             @Override

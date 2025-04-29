@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 public class TaxiResult {
     Long taxiId;
-    String departPosition;
-    String arrivingPosition;
+    Location departPosition;
+    Location arrivingPosition;
     LocalDateTime departDate;
     LocalDateTime arrivingTime;
 
@@ -13,8 +13,8 @@ public class TaxiResult {
 
     }
 
-    public TaxiResult(Long taxiId, LocalDateTime departDate, String departPosition,
-                      LocalDateTime arrivingTime, String arrivingPosition) {
+    public TaxiResult(Long taxiId, LocalDateTime departDate, Location departPosition,
+                      LocalDateTime arrivingTime, Location arrivingPosition) {
         this.taxiId = taxiId;
         this.departDate = departDate;
         this.departPosition = departPosition;
@@ -29,16 +29,16 @@ public class TaxiResult {
     public void setTaxiId(Long taxiId) {
         this.taxiId = taxiId;
     }
-    public String getDepartPosition() {
+    public Location getDepartPosition() {
         return departPosition;
     }
-    public void setDepartPosition(String departPosition) {
+    public void setDepartPosition(Location departPosition) {
         this.departPosition = departPosition;
     }
-    public String getArrivingPosition() {
+    public Location getArrivingPosition() {
         return arrivingPosition;
     }
-    public void setArrivingPosition(String arrivingPosition) {
+    public void setArrivingPosition(Location arrivingPosition) {
         this.arrivingPosition = arrivingPosition;
     }
     public LocalDateTime getDepartDate() {
