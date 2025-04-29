@@ -5,12 +5,14 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 public class Main {
@@ -35,6 +37,7 @@ public class Main {
 
         // JSON 파싱
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         String responseBody = response.body();
 
         // 로그인 성공 여부 판단
@@ -48,14 +51,23 @@ public class Main {
             // WebSocket & STOMP 클라이언트 구성
             StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
             WebSocketStompClient stompClient = new WebSocketStompClient(standardWebSocketClient);
-            stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
+            // MappingJackson2MessageConverter에 JavaTimeModule 추가
+            MappingJackson2MessageConverter messageConverter = new MappingJackson2MessageConverter();
+            ObjectMapper converterObjectMapper = new ObjectMapper();
+            converterObjectMapper.registerModule(new JavaTimeModule());
+            messageConverter.setObjectMapper(converterObjectMapper);
+
+            stompClient.setMessageConverter(messageConverter);
 
             String wsUrl = "ws://localhost:8080/ws";
 
             CustomSessionHandler sessionHandler = new CustomSessionHandler(jwtToken);
             Future<StompSession> future = stompClient.connectAsync(wsUrl, sessionHandler);
 
-            Thread.currentThread().join();
+            // 메인 스레드를 살아있게 유지하기 위해 CountDownLatch 사용
+            CountDownLatch latch = new CountDownLatch(1);
+            latch.await(); // latch가 열릴 때까지 대기
 
         } else {
             String errorMessage = objectMapper.readTree(responseBody)

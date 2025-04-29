@@ -3,7 +3,7 @@ package goorm.humandelivery.dto;
 import java.time.LocalDateTime;
 
 public class TaxiResult {
-    int taxiId;
+    Long taxiId;
     String departPosition;
     String arrivingPosition;
     LocalDateTime departDate;
@@ -13,7 +13,7 @@ public class TaxiResult {
 
     }
 
-    public TaxiResult(int taxiId, LocalDateTime departDate, String departPosition,
+    public TaxiResult(Long taxiId, LocalDateTime departDate, String departPosition,
                       LocalDateTime arrivingTime, String arrivingPosition) {
         this.taxiId = taxiId;
         this.departDate = departDate;
@@ -23,10 +23,10 @@ public class TaxiResult {
     }
 
 
-    public int getTaxiId() {
+    public Long getTaxiId() {
         return taxiId;
     }
-    public void setTaxiId(int taxiId) {
+    public void setTaxiId(Long taxiId) {
         this.taxiId = taxiId;
     }
     public String getDepartPosition() {
