@@ -1,11 +1,11 @@
 package goorm.humandelivery.dto;
 
-public class CallResponse {
+public class CallRequestMessageResponse {
     private String message;
 
-    public CallResponse() {}
+    public CallRequestMessageResponse() {}
 
-    public CallResponse(String message) {
+    public CallRequestMessageResponse(String message) {
         this.message = message;
     }
 

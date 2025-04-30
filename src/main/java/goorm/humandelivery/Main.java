@@ -2,7 +2,9 @@ package goorm.humandelivery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -40,10 +42,13 @@ public class Main {
         objectMapper.registerModule(new JavaTimeModule());
         String responseBody = response.body();
 
+        System.out.println("로그인 응답 내용: " + responseBody);
+
+
         // 로그인 성공 여부 판단
         if (response.statusCode() == 200) { // 200 OK
             String jwtToken = objectMapper.readTree(responseBody)
-                    .get("token")
+                    .get("accessToken")
                     .asText();
 
             System.out.println("JWT 토큰 발급 성공: " + jwtToken);
@@ -62,8 +67,13 @@ public class Main {
 
             String wsUrl = "ws://localhost:8080/ws";
 
-            CustomSessionHandler sessionHandler = new CustomSessionHandler(jwtToken);
-            Future<StompSession> future = stompClient.connectAsync(wsUrl, sessionHandler);
+
+            WebSocketHttpHeaders httpHeaders = new WebSocketHttpHeaders();
+            StompHeaders stompHeaders = new StompHeaders();
+            stompHeaders.add("Authorization", jwtToken);
+
+            CustomSessionHandler sessionHandler = new CustomSessionHandler();
+            Future<StompSession> future = stompClient.connectAsync(wsUrl,httpHeaders,stompHeaders ,sessionHandler);
 
             // 메인 스레드를 살아있게 유지하기 위해 CountDownLatch 사용
             CountDownLatch latch = new CountDownLatch(1);
