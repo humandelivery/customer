@@ -2,7 +2,6 @@ package goorm.humandelivery;
 
 import goorm.humandelivery.dto.*;
 import org.springframework.messaging.simp.stomp.*;
-import org.springframework.messaging.support.ErrorMessage;
 
 import java.lang.reflect.Type;
 import java.util.Scanner;
@@ -12,6 +11,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
     private final ClientStatusContext statusContext = new ClientStatusContext();
     private final MessageStorage messageStorage = new MessageStorage();
     private final CallRetryHandler callRetryHandler = new CallRetryHandler();
+    private StompSession.Subscription locationSubscription; // 구독을 해제하기 위해서 필요함
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
@@ -93,6 +93,24 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         });
     }
 
+    private void subscribeLocation(StompSession session) {
+        StompHeaders headers = new StompHeaders();
+        headers.setDestination("/user/queue/update-taxidriver-location");
+
+        locationSubscription = session.subscribe(headers, new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return TaxiLocation.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                TaxiLocation location = (TaxiLocation) payload;
+                System.out.println("택시기사의 위치 : " + location);
+            }
+        });
+    }
+
     private void subscribeRideStatus(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/user/queue/ride-status");
@@ -105,16 +123,27 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                 RideStatus rideStatus = (RideStatus) payload;
                 String status = rideStatus.getStatus();
 
-                if ("ON_DRIVING".equals(status)) {
+                if ("RESERVED".equals(status)) {
+                    System.out.println("고객 탑승 위치로 이동중입니다.");
+                    statusContext.setState(ClientState.MATCHED);
+
+                    // RESERVED 상태에서 위치 구독 시작
+                    subscribeLocation(session);
+
+                } else if ("ON_DRIVING".equals(status)) {
                     System.out.println("목적지로 이동 중입니다.");
                     statusContext.setState(ClientState.MOVING);
+
+                    // ON_DRIVING 상태에서 위치 구독 해제
+                    if (locationSubscription != null) {
+                        locationSubscription.unsubscribe();
+                        System.out.println("택시 위치 구독 해제 완료 (ON_DRIVING 상태)");
+                    }
+
                 } else if ("AVAILABLE".equals(status)) {
                     System.out.println("하차 완료. 운행이 종료되었습니다.");
                     statusContext.setState(ClientState.COMPLETED);
                     messageStorage.processPendingMessages(statusContext);
-                } else if("RESERVED".equals(status)) {
-                    System.out.println("고객 탑승 위치로 이동중입니다.");
-                    statusContext.setState(ClientState.MATCHED);
                 }
             }
         });
@@ -171,6 +200,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             }
         });
     }
+
     private void subscribeErrorMessages(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/user/queue/errors");

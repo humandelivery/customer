@@ -3,11 +3,13 @@ package goorm.humandelivery;
 import goorm.humandelivery.dto.*;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 class MessageStorage {
     private final Queue<TaxiResult> taxiResultQueue = new LinkedList<>();
     private final Queue<TaxiInfo> taxiInfoQueue = new LinkedList<>();
+    private final Queue<TaxiResult> taxiLocationQueue = new LinkedList<>();
 
     public synchronized void storeTaxiResult(TaxiResult result) {
         taxiResultQueue.offer(result);
@@ -16,6 +18,7 @@ class MessageStorage {
     public synchronized void storeTaxiInfo(TaxiInfo info) {
         taxiInfoQueue.offer(info);
     }
+
 
     public synchronized TaxiResult retrieveTaxiResult() {
         return taxiResultQueue.poll();

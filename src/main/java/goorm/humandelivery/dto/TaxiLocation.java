@@ -1,7 +1,6 @@
 package goorm.humandelivery.dto;
-
 public class TaxiLocation {
-    private Location location;
+    private Location location;  // It contains a Location object
 
     public Location getLocation() {
         return location;
@@ -11,16 +10,3 @@ public class TaxiLocation {
         this.location = location;
     }
 }
-
-
-/*
-public class TaxiLocation {
-    String location;
-
-    public String getLocation() {
-        return location;
-    }
-    public void setLocation(String location) {
-        this.location = location;
-    }
-}*/
