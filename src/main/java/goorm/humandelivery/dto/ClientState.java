@@ -5,5 +5,6 @@ public enum ClientState {
     READY,
     MATCHED,
     MOVING,
-    COMPLETED
+    COMPLETED,
+    CANCELED
 }
