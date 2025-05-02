@@ -2,6 +2,7 @@ package goorm.humandelivery;
 
 import goorm.humandelivery.dto.*;
 import org.springframework.messaging.simp.stomp.*;
+import org.springframework.messaging.support.ErrorMessage;
 
 import java.lang.reflect.Type;
 import java.util.Scanner;
@@ -80,7 +81,7 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
 
             public void handleFrame(StompHeaders headers, Object payload) {
                 TaxiInfo taxiInfo = (TaxiInfo) payload;
-                if (statusContext.getState() != ClientState.READY) {
+                if (statusContext.getState() != ClientState.MATCHED) {
                     messageStorage.storeTaxiInfo(taxiInfo);
                     return;
                 }
@@ -88,7 +89,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                 System.out.println("택시 정보 수신(배차 완료): " + taxiInfo);
                 System.out.println("택시 기사가 출발지로 이동 중입니다...");
                 statusContext.setState(ClientState.MATCHED);
-                messageStorage.processPendingMessages(statusContext);
             }
         });
     }
@@ -106,14 +106,15 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                 String status = rideStatus.getStatus();
 
                 if ("ON_DRIVING".equals(status)) {
-                    System.out.println("목적지로 이동 중입니다...");
+                    System.out.println("목적지로 이동 중입니다.");
                     statusContext.setState(ClientState.MOVING);
                 } else if ("AVAILABLE".equals(status)) {
                     System.out.println("하차 완료. 운행이 종료되었습니다.");
                     statusContext.setState(ClientState.COMPLETED);
                     messageStorage.processPendingMessages(statusContext);
-                } else {
-                    System.out.println("상태 업데이트: " + rideStatus.getMessage());
+                } else if("RESERVED".equals(status)) {
+                    System.out.println("고객 탑승 위치로 이동중입니다.");
+                    statusContext.setState(ClientState.MATCHED);
                 }
             }
         });
@@ -170,7 +171,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             }
         });
     }
-
     private void subscribeErrorMessages(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/user/queue/errors");
@@ -180,8 +180,13 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             }
 
             public void handleFrame(StompHeaders headers, Object payload) {
-                ErrorResponse errorMessages = (ErrorResponse) payload;
-                System.out.println("에러 메시지 수신: " + errorMessages);
+                ErrorResponse errorResponse = (ErrorResponse) payload;
+                System.out.println("에러 메시지 수신: " + errorResponse);
+
+                if (errorResponse.getErrorCode() != null &&
+                        "NoAvailableTaxiException".equals(errorResponse.getErrorCode())) {
+                    callRetryHandler.retry(session);
+                }
             }
         });
     }

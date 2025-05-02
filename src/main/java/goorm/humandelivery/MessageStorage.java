@@ -6,13 +6,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 class MessageStorage {
-    private final Queue<TaxiLocation> taxiLocationQueue = new LinkedList<>();
     private final Queue<TaxiResult> taxiResultQueue = new LinkedList<>();
     private final Queue<TaxiInfo> taxiInfoQueue = new LinkedList<>();
-
-    public synchronized void storeTaxiLocation(TaxiLocation location) {
-        taxiLocationQueue.offer(location);
-    }
 
     public synchronized void storeTaxiResult(TaxiResult result) {
         taxiResultQueue.offer(result);
@@ -20,10 +15,6 @@ class MessageStorage {
 
     public synchronized void storeTaxiInfo(TaxiInfo info) {
         taxiInfoQueue.offer(info);
-    }
-
-    public synchronized TaxiLocation retrieveTaxiLocation() {
-        return taxiLocationQueue.poll();
     }
 
     public synchronized TaxiResult retrieveTaxiResult() {
@@ -43,20 +34,6 @@ class MessageStorage {
                 if (info != null) {
                     System.out.println("택시 정보 수신(배차 완료): " + info);
                     statusContext.setState(ClientState.MATCHED);
-                }
-            }
-        }
-
-        if (currentState == ClientState.MATCHED) {
-            while (!taxiLocationQueue.isEmpty()) {
-                TaxiLocation location = retrieveTaxiLocation();
-                if (location != null) {
-                    String address = KakaoMap.convertCoordinatesToAddress(
-                            location.getLocation().getLatitude(),
-                            location.getLocation().getLongitude()
-                    );
-                    System.out.println("택시 위치: " + address);
-                    statusContext.setState(ClientState.MOVING);
                 }
             }
         }
