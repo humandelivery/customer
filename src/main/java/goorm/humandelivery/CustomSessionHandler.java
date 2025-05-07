@@ -213,11 +213,11 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         headers.setDestination("/user/queue/update-taxidriver-location");
         locationSubscription = session.subscribe(headers, new StompFrameHandler() {
             public Type getPayloadType(StompHeaders headers) {
-                return Location.class;
+                return LocationResponse.class;
             }
 
             public void handleFrame(StompHeaders headers, Object payload) {
-                Location location = (Location) payload;
+                LocationResponse location = (LocationResponse) payload;
                 System.out.println(location);
             }
         });
