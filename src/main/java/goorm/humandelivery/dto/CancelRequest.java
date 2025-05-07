@@ -3,6 +3,7 @@ package goorm.humandelivery.dto;
 public class CancelRequest {
     private String message;
 
+
     public CancelRequest() {}
     public CancelRequest(String message) {
         this.message = message;
