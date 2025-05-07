@@ -32,10 +32,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         subscribeErrorMessages(session);
         subscribeDispatchError(session);
 
-        // 명령줄 인자로 받은 주소 사용
-        System.out.println("출발지: " + originAddress);
-        System.out.println("목적지: " + destinationAddress);
-        System.out.println("택시 타입: " + taxiType);
 
         Location originLocation = safeConvertAddress(originAddress);
         Location destinationLocation = safeConvertAddress(destinationAddress);
@@ -119,12 +115,13 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
     }
 
 
+    @SuppressWarnings("unchecked")
     private void subscribeRideStatus(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/user/queue/ride-status");
         session.subscribe(headers, new StompFrameHandler() {
             public Type getPayloadType(StompHeaders headers) {
-                return Map.class; // Map으로 통일
+                return Map.class;
             }
 
             public void handleFrame(StompHeaders headers, Object payload) {
