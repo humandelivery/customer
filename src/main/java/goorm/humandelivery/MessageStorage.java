@@ -3,16 +3,15 @@ package goorm.humandelivery;
 import goorm.humandelivery.dto.*;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 
 class MessageStorage {
-    private final Queue<TaxiResult> taxiResultQueue = new LinkedList<>();
+    private final Queue<DrivingSummaryResponse> drivingSummaryResponseQueue = new LinkedList<>();
     private final Queue<TaxiInfo> taxiInfoQueue = new LinkedList<>();
-    private final Queue<TaxiResult> taxiLocationQueue = new LinkedList<>();
+    private final Queue<DrivingSummaryResponse> taxiLocationQueue = new LinkedList<>();
 
-    public synchronized void storeTaxiResult(TaxiResult result) {
-        taxiResultQueue.offer(result);
+    public synchronized void storeTaxiResult(DrivingSummaryResponse result) {
+        drivingSummaryResponseQueue.offer(result);
     }
 
     public synchronized void storeTaxiInfo(TaxiInfo info) {
@@ -20,8 +19,8 @@ class MessageStorage {
     }
 
 
-    public synchronized TaxiResult retrieveTaxiResult() {
-        return taxiResultQueue.poll();
+    public synchronized DrivingSummaryResponse retrieveTaxiResult() {
+        return drivingSummaryResponseQueue.poll();
     }
 
     public synchronized TaxiInfo retrieveTaxiInfo() {
@@ -42,8 +41,8 @@ class MessageStorage {
         }
 
         if (currentState == ClientState.COMPLETED) {
-            while (!taxiResultQueue.isEmpty()) {
-                TaxiResult result = retrieveTaxiResult();
+            while (!drivingSummaryResponseQueue.isEmpty()) {
+                DrivingSummaryResponse result = retrieveTaxiResult();
                 if (result != null) {
                     System.out.println("운행 결과: " + result);
                 }

@@ -34,11 +34,14 @@ application {
     mainClass = 'goorm.humandelivery.Main'
 }
 
-// Spring Boot JAR 비활성화, 일반 JAR 활성화
+// Spring Boot 실행 가능한 JAR 구성
 bootJar {
-    enabled = false
+    enabled = true
+    mainClass.set('goorm.humandelivery.Main')
+    archiveClassifier.set('boot')
 }
 
+// 일반 JAR 구성 (필요한 경우)
 jar {
     enabled = true
     manifest {
@@ -46,11 +49,27 @@ jar {
                 'Main-Class': 'goorm.humandelivery.Main'
         )
     }
+}
 
-    // 모든 의존성을 JAR에 포함
+// 모든 의존성을 포함한 fat JAR 생성을 위한 별도 태스크
+tasks.register('fatJar', Jar) {
+    archiveClassifier.set('fat')
+    from sourceSets.main.output
+    manifest {
+        attributes(
+                'Main-Class': 'goorm.humandelivery.Main'
+        )
+    }
+
+    dependsOn configurations.runtimeClasspath
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// 테스트 구성
+test {
+    useJUnitPlatform()
 }
