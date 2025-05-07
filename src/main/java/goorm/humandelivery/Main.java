@@ -22,9 +22,15 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
-        // REST 로그인 & jwt 토큰 획득
+
+        // 명령줄 인자 파싱
         String loginId = scanner.nextLine();
         String password = scanner.nextLine();
+        String originAddress = scanner.nextLine();
+        String destinationAddress = scanner.nextLine();
+        String taxiType = scanner.nextLine();
+
+        // REST 로그인 & jwt 토큰 획득
         String restLoginUrl = "http://localhost:8080/api/v1/customer/auth-tokens";
 
         String jsonBody = String.format("{\"loginId\": \"%s\", \"password\": \"%s\"}", loginId, password);
@@ -43,7 +49,6 @@ public class Main {
         String responseBody = response.body();
 
         System.out.println("로그인 응답 내용: " + responseBody);
-
 
         // 로그인 성공 여부 판단
         if (response.statusCode() == 200) { // 200 OK
@@ -67,13 +72,13 @@ public class Main {
 
             String wsUrl = "ws://localhost:8080/ws";
 
-
             WebSocketHttpHeaders httpHeaders = new WebSocketHttpHeaders();
             StompHeaders stompHeaders = new StompHeaders();
             stompHeaders.add("Authorization", jwtToken);
 
-            CustomSessionHandler sessionHandler = new CustomSessionHandler();
-            Future<StompSession> future = stompClient.connectAsync(wsUrl,httpHeaders,stompHeaders ,sessionHandler);
+            // 커스텀 세션 핸들러에 사용자 입력을 전달
+            CustomSessionHandler sessionHandler = new CustomSessionHandler(originAddress, destinationAddress, taxiType);
+            Future<StompSession> future = stompClient.connectAsync(wsUrl, httpHeaders, stompHeaders, sessionHandler);
 
             // 메인 스레드를 살아있게 유지하기 위해 CountDownLatch 사용
             CountDownLatch latch = new CountDownLatch(1);
