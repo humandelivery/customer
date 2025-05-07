@@ -142,10 +142,15 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                     }
                     // 2. 승차/하차 상태 처리
                     else if (map.containsKey("isDrivingStarted") || map.containsKey("isDrivingFinished")) {
-                        boolean isDrivingStarted = map.containsKey("isDrivingStarted") ?
-                                (Boolean) map.get("isDrivingStarted") : false;
-                        boolean isDrivingFinished = map.containsKey("isDrivingFinished") ?
-                                (Boolean) map.get("isDrivingFinished") : false;
+                        boolean isDrivingStarted = false;
+                        if (map.containsKey("isDrivingStarted")) {
+                            isDrivingStarted = (Boolean) map.get("isDrivingStarted");
+                        }
+
+                        boolean isDrivingFinished = false;
+                        if (map.containsKey("isDrivingFinished")) {
+                            isDrivingFinished = (Boolean) map.get("isDrivingFinished");
+                        }
 
                         // 승차 완료
                         if (isDrivingStarted) {
