@@ -1,6 +1,8 @@
 package goorm.humandelivery;
 
 import goorm.humandelivery.dto.CallRequest;
+import goorm.humandelivery.dto.ClientState;
+import goorm.humandelivery.dto.ClientStatusContext;
 import org.springframework.messaging.simp.stomp.StompSession;
 
 import java.util.concurrent.Executors;
@@ -30,6 +32,9 @@ public class CallRetryHandler {
 
         int delaySeconds = RETRY_DELAY_MS;
         System.out.println(delaySeconds + "초 후 재시도합니다.");
+        ClientStatusContext context = new ClientStatusContext();
+        context.setState(ClientState.WAITING);
+
 
         final int nextRetryCount = currentRetry + 1;
 

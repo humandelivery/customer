@@ -3,12 +3,14 @@ package goorm.humandelivery.dto;
 public class CallRequestMessageResponse {
     private String message;
     private String status;
+    private Long callId;
 
     public CallRequestMessageResponse() {}
 
-    public CallRequestMessageResponse(String message, String status) {
+    public CallRequestMessageResponse(String message, String status, Long callId) {
         this.message = message;
         this.status = status;
+        this.callId = callId;
     }
 
     public String getMessage() {
@@ -23,6 +25,12 @@ public class CallRequestMessageResponse {
     }
     public void setStatus(String status) {
         this.status = status;
+    }
+    public Long getCallId() {
+        return callId;
+    }
+    public void setCallId(Long callId) {
+        this.callId = callId;
     }
 
     @Override
