@@ -13,25 +13,22 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        // 명령줄 인자 검증
-        if (args.length < 5) {
-            System.out.println("사용법: java -jar program.jar <아이디> <비밀번호> <출발지주소> <목적지주소> <택시타입>");
-            System.out.println("예시: java -jar program.jar user123 pass123 \"서울시 강남구\" \"서울시 서초구\" normal");
-            System.exit(1);
-        }
+
+        Scanner scanner = new Scanner(System.in);
 
         // 명령줄 인자 파싱
-        String loginId = args[0];
-        String password = args[1];
-        String originAddress = args[2];
-        String destinationAddress = args[3];
-        String taxiType = args[4];
+        String loginId = scanner.nextLine();
+        String password = scanner.nextLine();
+        String originAddress = scanner.nextLine();
+        String destinationAddress = scanner.nextLine();
+        String taxiType = scanner.nextLine();
 
         // REST 로그인 & jwt 토큰 획득
         String restLoginUrl = "http://localhost:8080/api/v1/customer/auth-tokens";
