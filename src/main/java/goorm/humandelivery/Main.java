@@ -21,14 +21,16 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        Scanner scanner = new Scanner(System.in);
+        if(args.length < 5) {
+            System.exit(1);
+        }
 
         // 명령줄 인자 파싱
-        String loginId = scanner.nextLine();
-        String password = scanner.nextLine();
-        String originAddress = scanner.nextLine();
-        String destinationAddress = scanner.nextLine();
-        String taxiType = scanner.nextLine();
+        String loginId = args[0];
+        String password = args[1];
+        String originAddress = args[2];
+        String destinationAddress = args[3];
+        String taxiType = args[4];
 
         // REST 로그인 & jwt 토큰 획득
         String restLoginUrl = "http://localhost:8080/api/v1/customer/auth-tokens";

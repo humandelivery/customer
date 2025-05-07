@@ -5,9 +5,10 @@ import org.springframework.messaging.simp.stomp.*;
 
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static goorm.humandelivery.dto.DrivingStatus.COMPLETE;
 
 class CustomSessionHandler extends StompSessionHandlerAdapter {
 
@@ -62,8 +63,10 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
             System.out.println("매칭 취소: 'matchCancel' 입력 (배차 후 이동 시작 전까지 가능)");
 
             subscribeCallResponse(session);
-            subscribeTaxiInfo(session);
-            subscribeRideStatus(session);
+            subscribeDispatchStatus(session);
+            subscribeDrivingStart(session);
+            subscribeDrivingFinish(session);
+
         } else {
             System.out.println("주소 변환 실패, 콜 요청을 진행할 수 없습니다.");
         }
@@ -166,8 +169,8 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
                 if (session != null && session.isConnected()) {
                     try {
                         session.disconnect();
-                        System.exit(0);
                         System.out.println("세션이 정상적으로 종료되었습니다.");
+                        System.exit(0);
                     } catch (Exception e) {
                         System.err.println("세션 종료 중 오류 발생: " + e.getMessage());
                     }
@@ -205,32 +208,6 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         });
     }
 
-    private void subscribeTaxiInfo(StompSession session) {
-        StompHeaders headers = new StompHeaders();
-        headers.setDestination("/user/queue/accept-call-result");
-        session.subscribe(headers, new StompFrameHandler() {
-            public Type getPayloadType(StompHeaders headers) {
-                return TaxiInfo.class;
-            }
-
-            public void handleFrame(StompHeaders headers, Object payload) {
-                TaxiInfo taxiInfo = (TaxiInfo) payload;
-                if (statusContext.getState() != ClientState.MATCHED) {
-                    messageStorage.storeTaxiInfo(taxiInfo);
-                    return;
-                }
-
-                System.out.println("택시 정보 수신(배차 완료): " + taxiInfo);
-                System.out.println("택시 기사가 출발지로 이동 중입니다...");
-                statusContext.setState(ClientState.MATCHED);
-                // 배차 완료 후에는 콜 취소 불가능, 매칭 취소는 가능
-                canCancelCall.set(false);
-                canCancelMatch.set(true);
-                System.out.println("매칭 취소가 필요하면 'cancel-match'를 입력하세요 (운행 시작 전까지만 가능)");
-            }
-        });
-    }
-
     private void subscribeLocation(StompSession session) {
         StompHeaders headers = new StompHeaders();
         headers.setDestination("/user/queue/update-taxidriver-location");
@@ -246,76 +223,98 @@ class CustomSessionHandler extends StompSessionHandlerAdapter {
         });
     }
 
-
     @SuppressWarnings("unchecked")
-    private void subscribeRideStatus(StompSession session) {
+    // 배차 완료 메세지
+    private void subscribeDispatchStatus(StompSession session) {
+        System.out.println("subscribeDispatchStatus 호출");
         StompHeaders headers = new StompHeaders();
-        headers.setDestination("/user/queue/ride-status");
+        headers.setDestination("/user/queue/dispatch-status");
         session.subscribe(headers, new StompFrameHandler() {
             public Type getPayloadType(StompHeaders headers) {
-                return Map.class;
+                return MatchingSuccessResponse.class;
             }
 
             public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println(" subscribeRideStatus handleFrame 호출");
+
                 try {
-                    Map<String, Object> map = (Map<String, Object>) payload;
+                    MatchingSuccessResponse response = (MatchingSuccessResponse)payload;
 
-                    // 1. RESERVED 상태 처리
-                    if (map.containsKey("status")) {
-                        String status = (String) map.get("status");
-                        if ("RESERVED".equals(status)) {
-                            System.out.println("고객 탑승 위치로 이동중입니다.");
-                            statusContext.setState(ClientState.MATCHED);
-                            canCancelCall.set(false);
-                            canCancelMatch.set(true);
-                            subscribeLocation(session);
+                    if (response.getTaxiDriverStatus() == TaxiDriverStatus.RESERVED) {
+                        System.out.println("고객 탑승 위치로 이동중입니다.");
+                        statusContext.setState(ClientState.MATCHED);
+                        subscribeLocation(session);
+                        canCancelMatch.set(true);
+                        canCancelCall.set(false);
+                    }
+                } catch (Exception e) {
+                    System.err.println("메시지 처리 중 오류 발생: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    // 승차 완료 메세지
+    private void subscribeDrivingStart(StompSession session) {
+        System.out.println("subscribeDispatchStatus 호출");
+        StompHeaders headers = new StompHeaders();
+        headers.setDestination("/user/queue/driving-start");
+        session.subscribe(headers, new StompFrameHandler() {
+            public Type getPayloadType(StompHeaders headers) {
+                return DrivingInfoResponse.class;
+            }
+
+            public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("subscribeRideStatus handleFrame 호출");
+                try {
+                    DrivingInfoResponse response = (DrivingInfoResponse) payload;
+
+                    // 승차 완료
+                    if (response.isDrivingStarted()) {
+                        System.out.println("승차 완료. 목적지로 이동을 시작합니다.");
+                        statusContext.setState(ClientState.MOVING);
+                        cancelResponseReceived.set(true);
+
+                        if (locationSubscription != null) {
+                            locationSubscription.unsubscribe();
+                            System.out.println("택시 위치 구독 해제 완료 (승차 완료)");
                         }
                     }
-                    // 2. 승차/하차 상태 처리
-                    else if (map.containsKey("isDrivingStarted") || map.containsKey("isDrivingFinished")) {
-                        boolean isDrivingStarted = false;
-                        if (map.containsKey("isDrivingStarted")) {
-                            isDrivingStarted = (Boolean) map.get("isDrivingStarted");
-                        }
+                } catch (Exception e) {
+                    System.err.println("메시지 처리 중 오류 발생: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
-                        boolean isDrivingFinished = false;
-                        if (map.containsKey("isDrivingFinished")) {
-                            isDrivingFinished = (Boolean) map.get("isDrivingFinished");
-                        }
 
-                        // 승차 완료
-                        if (isDrivingStarted) {
-                            System.out.println("승차 완료. 목적지로 이동을 시작합니다.");
-                            statusContext.setState(ClientState.MOVING);
-                            // 운행 시작 후에는 매칭 취소도 불가능
-                            canCancelMatch.set(false);
+    @SuppressWarnings("unchecked")
+    // 하차 완료 메세지
+    private void subscribeDrivingFinish(StompSession session) {
+        System.out.println("subscribeDispatchStatus 호출");
+        StompHeaders headers = new StompHeaders();
+        headers.setDestination("/user/queue/driving-finish");
+        session.subscribe(headers, new StompFrameHandler() {
+            public Type getPayloadType(StompHeaders headers) {
+                return DrivingSummaryResponse.class;
+            }
 
-                            if (locationSubscription != null) {
-                                locationSubscription.unsubscribe();
-                                System.out.println("택시 위치 구독 해제 완료 (승차 완료)");
-                            }
-                        }
+            public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("subscribeRideStatus handleFrame 호출");
+                try {
+                    DrivingSummaryResponse response = (DrivingSummaryResponse) payload;
 
-                        // 하차 완료
-                        if (isDrivingFinished) {
-                            System.out.println("하차 완료. 운행이 종료되었습니다.");
-                            statusContext.setState(ClientState.COMPLETED);
-                        }
+                    DrivingStatus drivingStatus = response.getDrivingStatus();
+
+                    // 하차 완료
+                    if (drivingStatus == COMPLETE) {
+                        System.out.println("하차 완료. 운행이 종료되었습니다.");
+                        statusContext.setState(ClientState.COMPLETED);
                     }
-                    // 3. 운행 완료 요약
-                    else if (map.containsKey("drivingStatus")) {
-                        String drivingStatus = map.get("drivingStatus").toString();
-                        if (drivingStatus.contains("COMPLETE")) {
-                            System.out.println("운행이 완료되었습니다.");
 
-                            Long callId = (Long) map.get("callId");
-                            System.out.println("운행 요약 정보 수신 완료 . 콜 ID: " + callId);
-
-                            callRetryHandler.shutdown();
-                            session.disconnect();
-                            System.exit(0);
-                        }
-                    }
                 } catch (Exception e) {
                     System.err.println("메시지 처리 중 오류 발생: " + e.getMessage());
                     e.printStackTrace();
